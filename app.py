@@ -13,8 +13,7 @@ if __name__ == '__main__':
 # alembic downgrade -1
 
 # git add .
-# git commit -m "Aula 05 - Atualizando endpoints para usar o banco de dados real"
-# git commit -m "Aula 06 - xxxxxxxxxx"
+# git commit -m "Aula 06 - Protege os endpoints PUT e DELETE com autenticação"
 # git push
 # license GNU General Public License v3.0
 
