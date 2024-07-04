@@ -27,7 +27,7 @@ def test_app_users_create_return_error_bad_request_username(client, user):
     client.post('/users/', json=json)
     response = client.post('/users/', json=json)
 
-    assert response.status_code == HTTPStatus.BAD_REQUEST
+    assert response.status_code == HTTPStatus.CONFLICT
     assert response.json() == {'detail': 'Username already exists'}
 
 
@@ -36,7 +36,7 @@ def test_app_users_create_return_error_bad_request_email(client, user):
     client.post('/users/', json=json)
     response = client.post('/users/', json=json)
 
-    assert response.status_code == HTTPStatus.BAD_REQUEST
+    assert response.status_code == HTTPStatus.CONFLICT
     assert response.json() == {'detail': 'Email already exists'}
 
 
@@ -48,7 +48,9 @@ def test_app_users_read_all_return_ok_empty(client):
 
 def test_app_users_read_all_return_ok_with_users(client, user):
     user_schema = UserPublic.model_validate(user).model_dump()
+
     response = client.get('/users/')
+
     assert response.status_code == HTTPStatus.OK
     assert response.json() == {'users': [user_schema]}
 

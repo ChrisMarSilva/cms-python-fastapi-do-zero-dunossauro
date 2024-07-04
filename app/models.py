@@ -20,14 +20,14 @@ class User:
     updated_at: Mapped[datetime] = mapped_column(init=False, server_default=func.now(), server_onupdate=func.now())
     # CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 
-    # def __repr__(self) -> str:
-    #     return (
-    #         'User('
-    #         f'id={self.id!r}, '
-    #         f'username={self.username!r}, '
-    #         f'password={self.password!r}, '
-    #         f'email={self.email!r}, '
-    #         f'created_at={self.created_at!r}'
-    #         f'updated_at={self.updated_at!r}'
-    #         f')'
-    #     )
+    def __repr__(self) -> str:  # pragma: no cover
+        return (
+            'User('
+            f'id={self.id!r}, '
+            f'username={self.username!r}, '
+            f'password={self.password!r}, '
+            f'email={self.email!r}, '
+            f'created_at={self.created_at!r}'
+            f'updated_at={self.updated_at!r}'
+            f')'
+        )

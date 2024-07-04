@@ -14,6 +14,7 @@ if __name__ == '__main__':
 
 # git add .
 # git commit -m "Aula 05 - Atualizando endpoints para usar o banco de dados real"
+# git commit -m "Aula 06 - xxxxxxxxxx"
 # git push
 # license GNU General Public License v3.0
 
