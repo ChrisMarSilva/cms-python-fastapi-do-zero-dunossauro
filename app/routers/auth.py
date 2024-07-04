@@ -12,8 +12,6 @@ from app.schemas.token import Token
 from app.utils.security import create_access_token, verify_password
 
 router = APIRouter(prefix='/auth', tags=['auth'])
-
-
 OAuth2Form = Annotated[OAuth2PasswordRequestForm, Depends()]
 Session = Annotated[Session, Depends(get_session)]
 

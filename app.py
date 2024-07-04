@@ -13,7 +13,7 @@ if __name__ == '__main__':
 # alembic downgrade -1
 
 # git add .
-# git commit -m "Aula 07 - Refatorando estrutura do projeto: Criado routers para Users e Auth; movido constantes para variáveis de ambient"
+# git commit -m "Aula 08 - Tornando o sistema de autenticação robusto"
 # git push
 # license GNU General Public License v3.0
 

@@ -12,7 +12,6 @@ from app.schemas.user import UserList, UserPublic, UserSchema
 from app.utils.security import get_current_user, get_password_hash
 
 router = APIRouter(prefix='/users', tags=['users'])
-
 Session = Annotated[Session, Depends(get_session)]
 CurrentUser = Annotated[User, Depends(get_current_user)]
 
