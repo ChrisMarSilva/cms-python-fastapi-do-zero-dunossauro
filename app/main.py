@@ -3,6 +3,7 @@ from http import HTTPStatus
 from fastapi import FastAPI, HTTPException
 
 from app.schemas import Message, UserDB, UserList, UserPublic, UserSchema
+from app.models import User
 
 app = FastAPI()
 
@@ -28,9 +29,16 @@ def read_one_user(user_id: int):
 
 
 @app.post('/users/', status_code=HTTPStatus.CREATED, response_model=UserPublic)
-def create_user(user: UserSchema):
-    user_with_id = UserDB(**user.model_dump(), id=len(database) + 1)
+def create_user(request: UserSchema):
+    user_with_id = UserDB(**request.model_dump(), id=len(database) + 1)
     database.append(user_with_id)
+
+    user = User(
+        username=request.username,
+        password=request.password,
+        email=request.email,
+    )
+
     return user_with_id
 
 

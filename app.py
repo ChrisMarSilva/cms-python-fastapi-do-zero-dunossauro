@@ -10,6 +10,10 @@ if __name__ == '__main__':
 # pytest -s -x --cov=app -vv
 # coverage html
 
+# alembic init migrations
+# alembic revision --autogenerate -m "create users table"
+# alembic upgrade head
+
 # git add .
 # git commit -m "Configuração inicial do projeto"
 # git push
