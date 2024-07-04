@@ -4,10 +4,11 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
 from sqlalchemy.pool import StaticPool
 
-from app.database import get_session
+from app.db.database import get_session
 from app.main import app
-from app.models import User, table_registry
-from app.security import get_password_hash
+from app.models import table_registry
+from app.models.user import User
+from app.utils.security import get_password_hash
 
 
 @pytest.fixture()

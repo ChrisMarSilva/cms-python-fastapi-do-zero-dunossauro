@@ -9,10 +9,10 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 # from zoneinfo import ZoneInfo
-from app.database import get_session
-from app.models import User
-from app.schemas import TokenData
-from app.settings import Settings
+from app.db.database import get_session
+from app.models.user import User
+from app.schemas.token import TokenData
+from app.utils.settings import Settings
 
 settings = Settings()
 pwd_context = PasswordHash.recommended()

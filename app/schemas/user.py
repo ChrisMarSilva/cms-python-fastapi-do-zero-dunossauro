@@ -1,10 +1,6 @@
 from pydantic import BaseModel, ConfigDict, EmailStr
 
 
-class Message(BaseModel):
-    message: str
-
-
 class UserSchema(BaseModel):  # UserRequest
     username: str
     email: EmailStr
@@ -20,12 +16,3 @@ class UserPublic(BaseModel):  # UserResponse
 
 class UserList(BaseModel):  # UsersResponse
     users: list[UserPublic]
-
-
-class Token(BaseModel):  # TokenRequest
-    access_token: str
-    token_type: str
-
-
-class TokenData(BaseModel):
-    username: str | None = None

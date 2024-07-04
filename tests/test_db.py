@@ -1,6 +1,6 @@
 from sqlalchemy import select
 
-from app.models import User
+from app.models.user import User
 
 
 def test_db_users_create(session):
