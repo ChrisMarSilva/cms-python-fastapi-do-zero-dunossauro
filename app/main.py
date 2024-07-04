@@ -31,13 +31,12 @@ def users_create(request_user: UserSchema, session: Session = Depends(get_sessio
             raise HTTPException(status_code=HTTPStatus.CONFLICT, detail='Email already exists')
 
     hashed_password = get_password_hash(request_user.password)
-    new_user = User(username=request_user.username, password=request_user.password, email=hashed_password)
-    session.add(new_user)
-
+    db_user = User(username=request_user.username, password=hashed_password, email=request_user.email)
+    session.add(db_user)
     session.commit()
-    session.refresh(new_user)
+    session.refresh(db_user)
 
-    return new_user
+    return db_user
 
 
 @app.get('/users/', status_code=HTTPStatus.OK, response_model=UserList)
@@ -59,20 +58,14 @@ def users_read_one(user_id: int, session: Session = Depends(get_session)):
 
 
 @app.put('/users/{user_id}', status_code=HTTPStatus.OK, response_model=UserPublic)
-def users_update(user_id: int, request_user: UserSchema, session: Session = Depends(get_session), current_user: User = Depends(get_current_user)):
+def users_update(user_id: int, user: UserSchema, session: Session = Depends(get_session), current_user: User = Depends(get_current_user)):
     if current_user.id != user_id:
-        raise HTTPException(status_code=HTTPStatus.BAD_REQUEST, detail='Not enough permissions')
+        raise HTTPException(status_code=HTTPStatus.NOT_FOUND, detail='User not found')
 
-    # stmt = select(User).where(User.id == user_id)
-    # db_user = session.scalar(stmt)
-    # if not db_user:
-    #     raise HTTPException(status_code=HTTPStatus.NOT_FOUND, detail='User not found')
-
-    current_user.username = request_user.username
-    current_user.password = get_password_hash(request_user.password)
-    current_user.email = request_user.email
+    current_user.username = user.username
+    current_user.password = get_password_hash(user.password)
+    current_user.email = user.email
     current_user.updated_at = datetime.now()
-
     session.commit()
     session.refresh(current_user)
 
@@ -80,15 +73,9 @@ def users_update(user_id: int, request_user: UserSchema, session: Session = Depe
 
 
 @app.delete('/users/{user_id}', status_code=HTTPStatus.NO_CONTENT)
-def users_delete(user_id: int, session: Session = Depends(get_session), current_user: User = Depends(get_current_user)):
+def delete_user(user_id: int, session: Session = Depends(get_session), current_user: User = Depends(get_current_user)):
     if current_user.id != user_id:
-        raise HTTPException(status_code=HTTPStatus.BAD_REQUEST, detail='Not enough permissions')
-
-    # stmt = select(User).where(User.id == user_id)
-    # db_user = session.scalar(stmt)
-    #
-    # if not db_user:
-    #     raise HTTPException(status_code=HTTPStatus.NOT_FOUND, detail='User not found')
+        raise HTTPException(status_code=HTTPStatus.NOT_FOUND, detail='User not found')
 
     session.delete(current_user)
     session.commit()
@@ -96,12 +83,10 @@ def users_delete(user_id: int, session: Session = Depends(get_session), current_
 
 @app.post('/token', response_model=Token)
 def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(), session: Session = Depends(get_session)):
-    stmt = select(User).where(User.email == form_data.username)
-    user = session.scalar(stmt)
+    user = session.scalar(select(User).where(User.email == form_data.username))
 
     if not user:
         raise HTTPException(status_code=HTTPStatus.BAD_REQUEST, detail='Incorrect email or password')
-
     if not verify_password(form_data.password, user.password):
         raise HTTPException(status_code=HTTPStatus.BAD_REQUEST, detail='Incorrect email or password')
 

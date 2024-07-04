@@ -6,6 +6,3 @@ class Settings(BaseSettings):
 
     DATABASE_URL: str
     DATABASE_ECHO: bool = False
-
-    # class Config:
-    #     env_file = ".env"

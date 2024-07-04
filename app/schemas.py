@@ -5,24 +5,24 @@ class Message(BaseModel):
     message: str
 
 
-class UserSchema(BaseModel):
+class UserSchema(BaseModel):  # UserRequest
     username: str
     email: EmailStr
     password: str
 
 
-class UserPublic(BaseModel):
+class UserPublic(BaseModel):  # UserResponse
     id: int
     username: str
     email: EmailStr
     model_config = ConfigDict(from_attributes=True)
 
 
-class UserList(BaseModel):
+class UserList(BaseModel):  # UsersResponse
     users: list[UserPublic]
 
 
-class Token(BaseModel):
+class Token(BaseModel):  # TokenRequest
     access_token: str
     token_type: str
 
