@@ -8,6 +8,7 @@ from app.api import app
 from app.db.database import get_session
 from app.models import table_registry
 from app.models.user import User
+from app.repositories.user import UserRepository
 from app.utils.security import get_password_hash
 
 
@@ -25,11 +26,7 @@ def client(session):
 
 @pytest.fixture()
 def session():
-    engine = create_engine(
-        'sqlite:///:memory:',
-        connect_args={'check_same_thread': False},
-        poolclass=StaticPool,
-    )
+    engine = create_engine('sqlite:///:memory:', connect_args={'check_same_thread': False}, poolclass=StaticPool)
     table_registry.metadata.create_all(engine)
 
     with Session(engine) as session:
@@ -41,10 +38,7 @@ def session():
 @pytest.fixture()
 def user(session):
     user = User(username='Teste', email='teste@test.com', password=get_password_hash('testtest'))
-    session.add(user)
-    session.commit()
-    session.refresh(user)
-
+    user = UserRepository.create(session=session, user=user)
     user.clean_password = 'testtest'
     return user
 
@@ -52,10 +46,7 @@ def user(session):
 @pytest.fixture()
 def user2(session):
     user = User(username='Teste2', email='teste2@test.com', password=get_password_hash('testtest2'))
-    session.add(user)
-    session.commit()
-    session.refresh(user)
-
+    user = UserRepository.create(session=session, user=user)
     user.clean_password = 'testtest2'  # hack monkey-patch
     return user
 

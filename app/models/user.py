@@ -1,22 +1,24 @@
 from datetime import datetime
 
 # from uuid import UUID, uuid4
-from enum import Enum
-
+# from enum import Enum
 from sqlalchemy import func
 from sqlalchemy.orm import Mapped, mapped_column
 
+# from sqlalchemy import func, Boolean, Column, ForeignKey, Integer, String
+# from sqlalchemy.orm import relationship
 from app.models import table_registry
 
+# from app.database import Base
 
-class Gender(str, Enum):
-    male = 'male'
-    female = 'female'
-
-
-class Role(str, Enum):
-    admin = 'admin'
-    user = 'user'
+# class Gender(str, Enum):
+#     male = 'male'
+#     female = 'female'
+#
+#
+# class Role(str, Enum):
+#     admin = 'admin'
+#     user = 'user'
 
 
 @table_registry.mapped_as_dataclass
@@ -49,3 +51,25 @@ class User:
             f'updated_at={self.updated_at.strftime("%d-%m-%Y %H:%M:%S")!r}'
             f')'
         )
+
+
+# class User(Base):
+#     __tablename__ = "users"
+#
+#     id = Column(Integer, primary_key=True)
+#     email = Column(String, unique=True, index=True)
+#     hashed_password = Column(String)
+#     is_active = Column(Boolean, default=True)
+#
+#     items = relationship("Item", back_populates="owner")
+#
+#
+# class Item(Base):
+#     __tablename__ = "items"
+#
+#     id = Column(Integer, primary_key=True)
+#     title = Column(String, index=True)
+#     description = Column(String, index=True)
+#     owner_id = Column(Integer, ForeignKey("users.id"))
+#
+#     owner = relationship("User", back_populates="items")

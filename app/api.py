@@ -1,33 +1,38 @@
 import logging
+import time
 from http import HTTPStatus
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
+from fastapi.middleware.cors import CORSMiddleware
 
 from app.routers import auth, users
 from app.schemas.message import MessageResponse
 
-app = FastAPI(
-    title='FastAPI do Zero - Dunossauro',
-    description='',
-    summary='',
-    version='1.0',
-    # terms_of_service='http://example.com/terms/',
-    # contact={
-    #     'name': 'Deadpoolio the Amazing',
-    #     'url': 'http://x-force.example.com/contact/',
-    #     'email': 'dp@x-force.example.com',
-    # },
-    # license_info={
-    #     'name': 'Apache 2.0',
-    #     'url': 'https://www.apache.org/licenses/LICENSE-2.0.html',
-    #     'identifier': 'MIT',
-    # },
-)
+app = FastAPI(title='FastAPI do Zero - Dunossauro', version='1.0')
 app.include_router(users.router, prefix='/users', tags=['Users'])
 app.include_router(auth.router, prefix='/auth', tags=['Auth'])
 
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=['http://localhost', 'http://localhost:8080'],
+    allow_credentials=True,
+    allow_methods=['*'],
+    allow_headers=['*'],
+)
+
 # logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+
+@app.middleware('http')
+async def add_process_time_header(request: Request, call_next):
+    start_time = time.time()
+    response = await call_next(request)
+    process_time = time.time() - start_time
+
+    logger.info(process_time)
+    response.headers['X-Process-Time'] = str(process_time)
+    return response
 
 
 @app.get('/', status_code=HTTPStatus.OK, response_model=MessageResponse)

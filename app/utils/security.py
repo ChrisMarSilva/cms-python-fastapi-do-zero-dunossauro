@@ -6,18 +6,14 @@ from fastapi import Depends, HTTPException
 from fastapi.security import OAuth2PasswordBearer
 from jwt import DecodeError, decode, encode
 from pwdlib import PasswordHash
-from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-# from zoneinfo import ZoneInfo
 from app.db.database import get_session
-from app.models.user import User
-# from app.schemas.token import TokenData
+from app.repositories.user import UserRepository
 from app.utils.settings import Settings
 
 settings = Settings()
 pwd_context = PasswordHash.recommended()
-# oauth2_scheme = OAuth2PasswordBearer(tokenUrl='auth/token')
 SessionDep = Annotated[Session, Depends(get_session)]
 TokenDep = Annotated[str, Depends(OAuth2PasswordBearer(tokenUrl='auth/token'))]
 
@@ -53,14 +49,8 @@ async def get_current_user(session: SessionDep, token: TokenDep):
     if not email:  # pragma: no cover
         raise HTTPException(status_code=HTTPStatus.UNAUTHORIZED, detail='Could not validate credentials', headers={'WWW-Authenticate': 'Bearer'})
 
-    # token_data = TokenData(username=username)
-
-    stmt = select(User).where(User.email == email)
-    user = session.scalar(stmt)
-
+    user = UserRepository.get_by_email(session=session, email=email)
     if user is None:
         raise HTTPException(status_code=HTTPStatus.NOT_FOUND, detail='User not found')
-    # if not user.is_active:
-    #     raise HTTPException(status_code=HTTPStatus.BAD_REQUEST, detail="Inactive user")
 
     return user

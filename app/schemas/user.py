@@ -14,12 +14,11 @@ class UserResponse(BaseModel):
     username: str
     email: EmailStr
     model_config = ConfigDict(from_attributes=True)
-    #
     # class Config:
     #     orm_mode = True
 
 
 class UsersResponse(BaseModel):
-    users: list[UserResponse]
+    users: list[UserResponse] = []
     #  users = List[UserPublic] = []
     # complemento: Optional[str] = None
