@@ -2,7 +2,8 @@
 name = "fast-zero"
 version = "0.1.0"
 description = ""
-authors = ["ChrisMarSil <chris.mar.silva@gmail.com>"]
+#authors = ["ChrisMarSil <chris.mar.silva@gmail.com>"]
+authors = ["Admin <admin@example.com>"]
 readme = "README.md"
 
 [tool.poetry.dependencies]
@@ -59,16 +60,18 @@ extend-exclude = ['migrations']
 
 [tool.ruff.lint]
 preview = true
-select = ['I', 'F', 'E', 'W', 'PL', 'PT']
-#select = [
-#    "I",      # isort imports
-#    "F",      # flake8 error
-#    "E",      # pycodestyle error
-#    "W",      # pycodestyle warning
-#    'PL',
-#    'PT',
+select = [
+    "E",  # pycodestyle errors
+    "W",  # pycodestyle warning
+    "F",  # flake8 error - pyflakes
+    "I",  # isort imports
+    "B",  # flake8 bugbear
+    'PL',
+    'PT',
+    #"C4",  # flake8-comprehensions
+    #"UP",  # pyupgrade
+    #"ARG001", # unused arguments in functions
 #    "A",      # builtin shadowing
-#    "B",      # flake8 bugbear
 #    "BLE",    # aboid bare excepts
 #    "C4",     # simplify comprehensions
 #    "DTZ",    # datetime errors
@@ -84,8 +87,15 @@ select = ['I', 'F', 'E', 'W', 'PL', 'PT']
 #    "E4",
 #    "E7",
 #    "E9",
-#]
-#ignore = ['F401', 'E402', 'F811']
+]
+
+ignore = [
+    "E501",  # line too long, handled by black
+    "B008",  # do not perform function calls in argument defaults
+    #"W191",  # indentation contains tabs
+    "B904",  # Allow raising exceptions without from e, for HTTPException
+    # 'F401', 'E402', 'F811'
+]
 #show-source = true
 #fixable = ["ALL"]
 #unfixable = []
@@ -101,10 +111,14 @@ quote-style = "single"
 pythonpath = "."
 addopts = '-p no:warnings'
 
+[tool.ruff.lint.pyupgrade]
+# Preserve types, even if a file imports `from __future__ import annotations`.
+keep-runtime-typing = true
+
 [tool.taskipy.tasks]
 lint = 'ruff check . && ruff check . --diff'
 format = 'ruff check . --fix && ruff format .'
-run = 'fastapi dev app/main.py'
+run = 'fastapi dev app/api.py'
 pre_test = 'task lint'
 test = 'pytest -s -x --cov=app -vv'
 post_test = 'coverage html'

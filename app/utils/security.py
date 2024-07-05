@@ -39,27 +39,23 @@ def verify_password(plain_password: str, hashed_password: str):
 
 
 async def get_current_user(session: Session = Depends(get_session), token: str = Depends(oauth2_scheme)):
-    credentials_exception = HTTPException(
-        status_code=HTTPStatus.UNAUTHORIZED,
-        detail='Could not validate credentials',
-        headers={'WWW-Authenticate': 'Bearer'},
-    )
-
     try:
         payload = decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
         username: str = payload.get('sub')
 
         if not username:  # pragma: no cover
-            raise credentials_exception
+            raise HTTPException(status_code=HTTPStatus.UNAUTHORIZED, detail='Could not validate credentials', headers={'WWW-Authenticate': 'Bearer'})
 
         token_data = TokenData(username=username)
     except DecodeError:
-        raise credentials_exception
+        raise HTTPException(status_code=HTTPStatus.UNAUTHORIZED, detail='Could not validate credentials', headers={'WWW-Authenticate': 'Bearer'})
 
     stmt = select(User).where(User.email == token_data.username)
     user = session.scalar(stmt)
 
     if user is None:  # pragma: no cover
-        raise credentials_exception
+        raise HTTPException(status_code=HTTPStatus.NOT_FOUND, detail='User not found')
+    # elif not user.is_active:
+    #     raise HTTPException(status_code=400, detail="Inactive user")
 
     return user
