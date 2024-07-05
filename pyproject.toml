@@ -120,7 +120,7 @@ lint = 'ruff check . && ruff check . --diff'
 format = 'ruff check . --fix && ruff format .'
 run = 'fastapi dev app/api.py'
 pre_test = 'task lint'
-test = 'pytest -s -x --cov=app -vv'
+test = 'pytest -s -x --cov=app -vv -x'
 post_test = 'coverage html'
 
 [build-system]

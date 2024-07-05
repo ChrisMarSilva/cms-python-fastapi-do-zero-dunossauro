@@ -11,12 +11,12 @@ from app.schemas.token import TokenRequest
 from app.utils.security import create_access_token, verify_password
 
 router = APIRouter()
-OAuth2FormDep = Annotated[OAuth2PasswordRequestForm, Depends()]
-SessionDep = Annotated[Session, Depends(get_session)]
+T_OAuth2FormDep = Annotated[OAuth2PasswordRequestForm, Depends()]
+T_SessionDep = Annotated[Session, Depends(get_session)]
 
 
-@router.post('/token', response_model=TokenRequest, status_code=HTTPStatus.OK)
-async def login_for_access_token(request: OAuth2FormDep, session: SessionDep) -> TokenRequest:
+@router.post(path='/token', response_model=TokenRequest, status_code=HTTPStatus.OK)
+async def login_for_access_token(request: T_OAuth2FormDep, session: T_SessionDep) -> TokenRequest:
     user = UserRepository.get_by_email(session=session, email=request.username)
     if not user:
         raise HTTPException(status_code=HTTPStatus.BAD_REQUEST, detail='Incorrect email or password')

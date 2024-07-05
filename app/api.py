@@ -9,8 +9,8 @@ from app.routers import auth, users
 from app.schemas.message import MessageResponse
 
 app = FastAPI(title='FastAPI do Zero - Dunossauro', version='1.0')
-app.include_router(users.router, prefix='/users', tags=['Users'])
 app.include_router(auth.router, prefix='/auth', tags=['Auth'])
+app.include_router(users.router, prefix='/users', tags=['Users'])
 
 app.add_middleware(
     CORSMiddleware,
@@ -35,7 +35,7 @@ async def add_process_time_header(request: Request, call_next):
     return response
 
 
-@app.get('/', status_code=HTTPStatus.OK, response_model=MessageResponse)
+@app.get(path='/', status_code=HTTPStatus.OK, response_model=MessageResponse)
 async def root_read():
     logger.info('Get Message')
     return MessageResponse(message='Olá Mundo!')

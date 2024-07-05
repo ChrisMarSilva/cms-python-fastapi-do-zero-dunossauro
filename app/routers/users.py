@@ -15,12 +15,12 @@ from app.utils.security import get_current_user, get_password_hash
 # from .database import SessionLocal, engine
 
 router = APIRouter()
-SessionDep = Annotated[Session, Depends(get_session)]
-CurrentUserDep = Annotated[User, Depends(get_current_user)]
+T_SessionDep = Annotated[Session, Depends(get_session)]
+T_CurrentUserDep = Annotated[User, Depends(get_current_user)]
 
 
-@router.post('/', response_model=UserResponse, status_code=status.HTTP_201_CREATED)
-async def users_create(request: UserRequest, session: SessionDep):
+@router.post(path='/', response_model=UserResponse, status_code=status.HTTP_201_CREATED)
+async def users_create(request: UserRequest, session: T_SessionDep):
     db_user = UserRepository.get_by_username_or_email(session, request.username, request.email)
     if db_user:
         if db_user.username == request.username:
@@ -34,23 +34,23 @@ async def users_create(request: UserRequest, session: SessionDep):
     return db_user
 
 
-@router.get('/', response_model=UsersResponse, status_code=HTTPStatus.OK)
-async def users_read_all(session: SessionDep, skip: int = 0, limit: int = 100):
+@router.get(path='/', response_model=UsersResponse, status_code=HTTPStatus.OK)
+async def users_read_all(skip: int, limit: int, session: T_SessionDep):
     users = UserRepository.get_all(session=session, skip=skip, limit=limit)
 
     return UsersResponse(users=users)  # {'users': users}
 
 
-@router.get('/{user_id}', response_model=UserResponse, status_code=HTTPStatus.OK)
-async def users_read_one(user_id: int, current_user: CurrentUserDep):
+@router.get(path='/{user_id}', response_model=UserResponse, status_code=HTTPStatus.OK)
+async def users_read_one(user_id: int, current_user: T_CurrentUserDep):
     if current_user.id != user_id:
         raise HTTPException(status_code=HTTPStatus.FORBIDDEN, detail='The user do not have enough privileges')
 
     return current_user
 
 
-@router.put('/{user_id}', response_model=UserResponse, status_code=HTTPStatus.OK)
-async def users_update(user_id: int, request: UserRequest, session: SessionDep, current_user: CurrentUserDep) -> User:
+@router.put(path='/{user_id}', response_model=UserResponse, status_code=HTTPStatus.OK)
+async def users_update(user_id: int, request: UserRequest, session: T_SessionDep, current_user: T_CurrentUserDep) -> User:
     if current_user.id != user_id:
         raise HTTPException(status_code=HTTPStatus.FORBIDDEN, detail='The user do not have enough privileges')
 
@@ -64,8 +64,8 @@ async def users_update(user_id: int, request: UserRequest, session: SessionDep, 
     return current_user
 
 
-@router.delete('/{user_id}', status_code=HTTPStatus.NO_CONTENT)
-async def delete_user(user_id: int, session: SessionDep, current_user: CurrentUserDep):
+@router.delete(path='/{user_id}', status_code=HTTPStatus.NO_CONTENT)
+async def delete_user(user_id: int, session: T_SessionDep, current_user: T_CurrentUserDep):
     if current_user.id != user_id:
         raise HTTPException(status_code=HTTPStatus.FORBIDDEN, detail='The user do not have enough privileges')
 
