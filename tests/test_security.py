@@ -6,11 +6,14 @@ from app.utils.security import create_access_token, settings
 
 
 def test_security_jwt():
+    # Arrange
     data = {'test': 'test'}
     token = create_access_token(data)
 
+    # Act
     decoded = decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
 
+    # Assert
     assert decoded['test'] == data['test']
     assert decoded['exp']
 

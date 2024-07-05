@@ -58,19 +58,22 @@ async def users_read_all(session: SessionDep, skip: int = 0, limit: int = 100) -
 
 
 @router.get('/{user_id}', response_model=UserResponse, status_code=HTTPStatus.OK)
-async def users_read_one(user_id: int, session: SessionDep) -> Any:
+async def users_read_one(user_id: int, current_user: CurrentUserDep) -> Any:
     """
     Get a specific user by id.
     """
 
+    if current_user.id != user_id:
+        raise HTTPException(status_code=HTTPStatus.FORBIDDEN, detail='The user do not have enough privileges')
+
     # curso = CursoRepository.find_by_id(db, id)
     # return CursoResponse.from_orm(curso)
-    stmt = select(User).where(User.id == user_id)
-    db_user = session.scalar(stmt)  # session.get(User, user_id)
-    if not db_user:
-        raise HTTPException(status_code=HTTPStatus.NOT_FOUND, detail='User not found')
+    # stmt = select(User).where(User.id == user_id)
+    # db_user = session.scalar(stmt)  # session.get(User, user_id)
+    # if not db_user:
+    #     raise HTTPException(status_code=HTTPStatus.NOT_FOUND, detail='User not found')
 
-    return db_user
+    return current_user
 
 
 @router.put('/{user_id}', response_model=UserResponse, status_code=HTTPStatus.OK)

@@ -1,12 +1,14 @@
 from http import HTTPStatus
 
 
-def test_auth_token_create_return_created(client, user):
-    response = client.post('/auth/token', data={'username': user.email, 'password': user.clean_password})
+def test_auth_token_create_return_created(client, user, token):
+    data = {'username': user.email, 'password': user.clean_password}
+    response = client.post('/auth/token', data=data)
     token = response.json()
     assert response.status_code == HTTPStatus.OK
     assert 'access_token' in token
     assert 'token_type' in token
+    assert token['token_type'] == 'bearer'
 
 
 def test_auth_token_create_return_error_bad_request_email(client, user):

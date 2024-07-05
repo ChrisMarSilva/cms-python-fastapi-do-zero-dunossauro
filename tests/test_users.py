@@ -39,16 +39,30 @@ def test_users_read_all_return_ok_with_users(client, user):
     assert response.json() == {'users': [user_schema]}
 
 
-def test_users_read_one_return_ok(client, user):
+def test_users_read_one_return_ok(client, user, token):
     user_schema = UserResponse.model_validate(user).model_dump()
-    response = client.get('/users/1')
+    headers = {'Authorization': f'Bearer {token}'}
+    response = client.get(f'/users/{user.id}', headers=headers)
     assert response.status_code == HTTPStatus.OK
     assert response.json() == user_schema
 
 
-def test_users_read_one_return_error_not_found(client):
-    response = client.get('/users/1')
+def test_users_read_one_return_error_not_forbidden(client, user, token2):
+    headers = {'Authorization': f'Bearer {token2}'}
+    response = client.get(f'/users/{user.id}', headers=headers)
+    assert response.status_code == HTTPStatus.FORBIDDEN
+    assert response.json() == {'detail': 'The user do not have enough privileges'}
+
+
+def test_users_read_one_return_error_not_found(client, user, token):
+    headers = {'Authorization': f'Bearer {token}'}
+
+    response = client.delete(f'/users/{user.id}', headers=headers)
+    assert response.status_code == HTTPStatus.NO_CONTENT
+
+    response = client.get(f'/users/{user.id}', headers=headers)
     assert response.status_code == HTTPStatus.NOT_FOUND
+    assert response.json() == {'detail': 'User not found'}
 
 
 def test_users_update_return_ok(client, user, token):
@@ -59,7 +73,7 @@ def test_users_update_return_ok(client, user, token):
     assert response.json() == {'username': 'bob', 'email': 'bob@example.com', 'id': user.id}
 
 
-def test_users_update_return_error_not_found(client, user, token2):
+def test_users_update_return_error_forbidden(client, user, token2):
     json = {'username': 'bob', 'email': 'bob@example.com', 'password': 'mynewpassword'}
     headers = {'Authorization': f'Bearer {token2}'}
     response = client.put(f'/users/{user.id}', headers=headers, json=json)
@@ -73,7 +87,7 @@ def test_users_delete_return_ok(client, user, token):
     assert response.status_code == HTTPStatus.NO_CONTENT
 
 
-def test_users_delete_return_error_not_found(client, user, token2):
+def test_users_delete_return_error_forbidden(client, user, token2):
     headers = {'Authorization': f'Bearer {token2}'}
     response = client.delete(f'/users/{user.id}', headers=headers)
     assert response.status_code == HTTPStatus.FORBIDDEN

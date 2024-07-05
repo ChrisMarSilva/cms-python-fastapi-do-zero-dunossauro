@@ -1,5 +1,6 @@
 from datetime import datetime, timedelta, timezone
 from http import HTTPStatus
+from typing import Annotated
 
 from fastapi import Depends, HTTPException
 from fastapi.security import OAuth2PasswordBearer
@@ -11,12 +12,14 @@ from sqlalchemy.orm import Session
 # from zoneinfo import ZoneInfo
 from app.db.database import get_session
 from app.models.user import User
-from app.schemas.token import TokenData
+# from app.schemas.token import TokenData
 from app.utils.settings import Settings
 
 settings = Settings()
 pwd_context = PasswordHash.recommended()
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl='auth/token')
+# oauth2_scheme = OAuth2PasswordBearer(tokenUrl='auth/token')
+SessionDep = Annotated[Session, Depends(get_session)]
+TokenDep = Annotated[str, Depends(OAuth2PasswordBearer(tokenUrl='auth/token'))]
 
 
 def create_access_token(data: dict):
@@ -24,6 +27,8 @@ def create_access_token(data: dict):
     # expire = datetime.now(tz=timezone.utc) + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES).astimezone(ZoneInfo("America/Sao_Paulo"))
     # expire = datetime.now(tz=ZoneInfo('UTC')) + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     # expire = datetime.now(tz=ZoneInfo('America/Sao_Paulo')) + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    # dt = datetime.datetime.now(timezone.utc)
+    # dt.replace(tzinfo=timezone.utc)
     expire = datetime.now(tz=timezone.utc) + timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
     to_encode.update({'exp': expire})
     encoded_jwt = encode(to_encode, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
@@ -38,24 +43,24 @@ def verify_password(plain_password: str, hashed_password: str):
     return pwd_context.verify(plain_password, hashed_password)
 
 
-async def get_current_user(session: Session = Depends(get_session), token: str = Depends(oauth2_scheme)):
+async def get_current_user(session: SessionDep, token: TokenDep):
     try:
         payload = decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
-        username: str = payload.get('sub')
-
-        if not username:  # pragma: no cover
-            raise HTTPException(status_code=HTTPStatus.UNAUTHORIZED, detail='Could not validate credentials', headers={'WWW-Authenticate': 'Bearer'})
-
-        token_data = TokenData(username=username)
     except DecodeError:
         raise HTTPException(status_code=HTTPStatus.UNAUTHORIZED, detail='Could not validate credentials', headers={'WWW-Authenticate': 'Bearer'})
 
-    stmt = select(User).where(User.email == token_data.username)
+    email: str = payload.get('sub')
+    if not email:  # pragma: no cover
+        raise HTTPException(status_code=HTTPStatus.UNAUTHORIZED, detail='Could not validate credentials', headers={'WWW-Authenticate': 'Bearer'})
+
+    # token_data = TokenData(username=username)
+
+    stmt = select(User).where(User.email == email)
     user = session.scalar(stmt)
 
-    if user is None:  # pragma: no cover
+    if user is None:
         raise HTTPException(status_code=HTTPStatus.NOT_FOUND, detail='User not found')
-    # elif not user.is_active:
-    #     raise HTTPException(status_code=400, detail="Inactive user")
+    # if not user.is_active:
+    #     raise HTTPException(status_code=HTTPStatus.BAD_REQUEST, detail="Inactive user")
 
     return user

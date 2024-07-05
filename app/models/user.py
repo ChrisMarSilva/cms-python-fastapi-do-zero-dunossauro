@@ -38,14 +38,14 @@ class User:
     # gender: Gender
     # roles: Optional[List[Role]]
 
-    def __repr__(self) -> str:  # pragma: no cover
+    def __repr__(self) -> str:
         return (
             'User('
             f'id={self.id!r}, '
             f'username={self.username!r}, '
             f'password={self.password!r}, '
             f'email={self.email!r}, '
-            f'created_at={self.created_at!r}'
-            f'updated_at={self.updated_at!r}'
+            f'created_at={self.created_at.strftime("%d-%m-%Y %H:%M:%S")!r}, '
+            f'updated_at={self.updated_at.strftime("%d-%m-%Y %H:%M:%S")!r}'
             f')'
         )
