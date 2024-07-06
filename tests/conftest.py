@@ -1,7 +1,6 @@
 import pytest
-from fastapi.testclient import TestClient
-from sqlalchemy import create_engine
-from sqlalchemy.orm import Session
+from httpx import AsyncClient
+from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.pool import StaticPool
 
 from app.api import app
@@ -13,51 +12,62 @@ from app.utils.security import get_password_hash
 
 
 @pytest.fixture()
-def client(session):
-    def get_session_override():
+async def client(session: AsyncSession) -> AsyncClient:
+    async def get_session_override():
         return session
 
-    with TestClient(app) as client:
-        app.dependency_overrides[get_session] = get_session_override
-        yield client
-
-    app.dependency_overrides.clear()
-
-
-@pytest.fixture()
-def session():
-    engine = create_engine('sqlite:///:memory:', connect_args={'check_same_thread': False}, poolclass=StaticPool)
-    table_registry.metadata.create_all(engine)
-
-    with Session(engine) as session:
-        yield session
-
-    table_registry.metadata.drop_all(engine)
+    try:
+        async with AsyncClient(app=app, base_url='http://test') as client:
+            app.dependency_overrides[get_session] = get_session_override
+            yield client
+    finally:
+        app.dependency_overrides.clear()
 
 
 @pytest.fixture()
-def user(session):
+async def session() -> AsyncSession:
+    engine = create_async_engine('sqlite+aiosqlite:///:memory:', connect_args={'check_same_thread': False}, poolclass=StaticPool)
+    try:
+        async with engine.begin() as conn:
+            # await conn.run_sync(table_registry.metadata.drop_all)
+            await conn.run_sync(table_registry.metadata.create_all)
+
+        async with AsyncSession(engine) as session:
+            yield session
+
+        # async_session = sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
+        # async with async_session() as session:
+        #     yield session
+
+        async with engine.begin() as conn:
+            await conn.run_sync(table_registry.metadata.drop_all)
+    finally:
+        await engine.dispose()
+
+
+@pytest.fixture()
+async def user(session: AsyncSession) -> User:
     user = User(username='Teste', email='teste@test.com', password=get_password_hash('testtest'))
-    user = UserRepository.create(session=session, user=user)
-    user.clean_password = 'testtest'
+    user = await UserRepository.create(session=session, user=user)
+    user.clean_password = 'testtest'  # hack monkey-patch
     return user
 
 
 @pytest.fixture()
-def user2(session):
+async def other_user(session: AsyncSession) -> User:
     user = User(username='Teste2', email='teste2@test.com', password=get_password_hash('testtest2'))
-    user = UserRepository.create(session=session, user=user)
+    user = await UserRepository.create(session=session, user=user)
     user.clean_password = 'testtest2'  # hack monkey-patch
     return user
 
 
 @pytest.fixture()
-def token(client, user):
-    response = client.post('/auth/token', data={'username': user.email, 'password': user.clean_password})
+async def token(client: AsyncClient, user: User) -> str:
+    response = await client.post('/auth/token', data={'username': user.email, 'password': user.clean_password})
     return response.json()['access_token']
 
 
 @pytest.fixture()
-def token2(client, user2):
-    response = client.post('/auth/token', data={'username': user2.email, 'password': user2.clean_password})
+async def other_token(client: AsyncClient, other_user: User) -> str:
+    response = await client.post('/auth/token', data={'username': other_user.email, 'password': other_user.clean_password})
     return response.json()['access_token']

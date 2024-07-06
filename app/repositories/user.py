@@ -1,54 +1,60 @@
 from sqlalchemy import select
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.user import User
 
 
 class UserRepository:
     @staticmethod
-    def get_all(session: Session, skip: int = 0, limit: int = 100) -> [User]:
+    async def get_all(session: AsyncSession, skip: int = 0, limit: int = 100) -> [User]:
         stmt = select(User).offset(skip).limit(limit)
-        return session.scalars(stmt).all()
+        result = await session.scalars(stmt)
+        return result.all()
 
     @staticmethod
-    def get_by_id(session: Session, user_id: int) -> User | None:
+    async def get_by_id(session: AsyncSession, user_id: int) -> User | None:
         stmt = select(User).where(User.id == user_id)
-        return session.scalar(stmt)
+        result = await session.scalar(stmt)
+        return result
 
     @staticmethod
-    def get_by_username(session: Session, username: str) -> User | None:
+    async def get_by_username(session: AsyncSession, username: str) -> User | None:
         stmt = select(User).where(User.username == username)
-        return session.scalar(stmt)
+        result = await session.scalar(stmt)
+        return result
 
     @staticmethod
-    def get_by_email(session: Session, email: str) -> User | None:
+    async def get_by_email(session: AsyncSession, email: str) -> User | None:
         stmt = select(User).where(User.email == email)
-        return session.scalar(stmt)
+        result = await session.execute(stmt)
+        return result.scalars().first()
 
     @staticmethod
-    def get_by_username_or_email(session: Session, username: str, email: str) -> User | None:
+    async def get_by_username_or_email(session: AsyncSession, username: str, email: str) -> User | None:
         stmt = select(User).where((User.username == username) | (User.email == email))
-        return session.scalar(stmt)
+        result = await session.scalar(stmt)
+        return result
 
     @staticmethod
-    def exists_by_id(session: Session, user_id: int) -> bool:
+    async def exists_by_id(session: AsyncSession, user_id: int) -> bool:
         stmt = select(User).where(User.id == user_id)
-        return session.scalar(stmt) is not None
+        result = await session.execute(stmt)
+        return result.scalar() is not None
 
     @staticmethod
-    def create(session: Session, user: User) -> User | None:
+    async def create(session: AsyncSession, user: User) -> User | None:
         session.add(user)
-        session.commit()
-        session.refresh(user)
+        await session.commit()
+        await session.refresh(user)
         return user
 
     @staticmethod
-    def update(session: Session, user: User) -> User | None:
-        session.commit()
-        session.refresh(user)
+    async def update(session: AsyncSession, user: User) -> User | None:
+        await session.commit()
+        await session.refresh(user)
         return user
 
     @staticmethod
-    def delete(session: Session, user: User) -> None:
-        session.delete(user)
-        session.commit()
+    async def delete(session: AsyncSession, user: User) -> None:
+        await session.delete(user)
+        await session.commit()

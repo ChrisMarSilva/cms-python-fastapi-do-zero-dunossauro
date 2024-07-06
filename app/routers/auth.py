@@ -3,21 +3,24 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.security import OAuth2PasswordRequestForm
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.database import get_session
+from app.models.user import User
 from app.repositories.user import UserRepository
 from app.schemas.token import TokenRequest
-from app.utils.security import create_access_token, verify_password
+from app.schemas.user import UserResponse
+from app.utils.security import create_access_token, get_current_user, verify_password
 
 router = APIRouter()
 T_OAuth2FormDep = Annotated[OAuth2PasswordRequestForm, Depends()]
-T_SessionDep = Annotated[Session, Depends(get_session)]
+T_SessionDep = Annotated[AsyncSession, Depends(get_session)]
+T_CurrentUserDep = Annotated[User, Depends(get_current_user)]
 
 
 @router.post(path='/token', response_model=TokenRequest, status_code=HTTPStatus.OK)
 async def login_for_access_token(request: T_OAuth2FormDep, session: T_SessionDep) -> TokenRequest:
-    user = UserRepository.get_by_email(session=session, email=request.username)
+    user = await UserRepository.get_by_email(session=session, email=request.username)
     if not user:
         raise HTTPException(status_code=HTTPStatus.BAD_REQUEST, detail='Incorrect email or password')
     if not verify_password(request.password, user.password):
@@ -27,19 +30,19 @@ async def login_for_access_token(request: T_OAuth2FormDep, session: T_SessionDep
     return TokenRequest(access_token=access_token, token_type='bearer')  # {'access_token': access_token, 'token_type': 'bearer'}
 
 
-# @router.post("/test-token", response_model=UserPublic)
-# def test_token(current_user: CurrentUser) -> Any:
-#     """
-#     Test access token
-#     """
-#     return current_user
-#
-#
+@router.post(path='/test_token', response_model=UserResponse, status_code=HTTPStatus.OK)
+async def test_token(current_user: T_CurrentUserDep):
+    return current_user
+
+
+@router.post(path='/refresh_token', response_model=TokenRequest, status_code=HTTPStatus.OK)
+async def refresh_access_token(current_user: T_CurrentUserDep):
+    access_token = create_access_token(data={'sub': current_user.email, 'id': current_user.id, 'username': current_user.username})
+    return TokenRequest(access_token=access_token, token_type='bearer')  # return {'access_token': new_access_token, 'token_type': 'bearer'}
+
+
 # @router.post("/password-recovery/{email}")
-# def recover_password(email: str, session: SessionDep) -> Message:
-#     """
-#     Password Recovery
-#     """
+# def recover_password(email: str, session: T_SessionDep) -> Message:
 #     user = crud.get_user_by_email(session=session, email=email)
 #     if not user:
 #         raise HTTPException(status_code=404, detail="The user with this email does not exist in the system.")
@@ -50,10 +53,7 @@ async def login_for_access_token(request: T_OAuth2FormDep, session: T_SessionDep
 #
 #
 # @router.post("/reset-password/")
-# def reset_password(session: SessionDep, body: NewPassword) -> Message:
-#     """
-#     Reset password
-#     """
+# def reset_password(session: T_SessionDep, body: NewPassword) -> Message:
 #     email = verify_password_reset_token(token=body.token)
 #     if not email:
 #         raise HTTPException(status_code=400, detail="Invalid token")

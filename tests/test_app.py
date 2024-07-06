@@ -1,10 +1,10 @@
 from http import HTTPStatus
 
+import pytest
 
-def setup_function(): ...
 
-
-def test_app_root_read_return_ok(client):
-    response = client.get('/')
+@pytest.mark.asyncio()
+async def test_app_root_read_return_ok(client):
+    response = await client.get('/')
     assert response.status_code == HTTPStatus.OK
     assert response.json() == {'message': 'Olá Mundo!'}

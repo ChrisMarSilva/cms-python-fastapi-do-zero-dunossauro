@@ -20,8 +20,9 @@ app.add_middleware(
     allow_headers=['*'],
 )
 
-# logging.basicConfig(level=logging.INFO)
+logging.basicConfig()  # logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+# logging.getLogger('sqlalchemy.engine').setLevel(logging.DEBUG)
 
 
 @app.middleware('http')
@@ -38,6 +39,7 @@ async def add_process_time_header(request: Request, call_next):
 @app.get(path='/', status_code=HTTPStatus.OK, response_model=MessageResponse)
 async def root_read():
     logger.info('Get Message')
+    # await asyncio.sleep(5)
     return MessageResponse(message='Olá Mundo!')
     # try:
     #     logger.info('Get Message')

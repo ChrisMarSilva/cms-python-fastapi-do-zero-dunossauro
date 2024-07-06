@@ -1,13 +1,16 @@
+import pytest
+
 from app.models.user import User
 from app.repositories.user import UserRepository
 
 
-def test_db_users_create(session):
+@pytest.mark.asyncio()
+async def test_db_users_create(session):
     # Arrange
     new_user = User(username='chrismarsil', password='123@456', email='chrismarsil@server.com')
 
     # Act
-    new_user = UserRepository.create(session=session, user=new_user)
+    new_user = await UserRepository.create(session=session, user=new_user)
 
     # Assert
     assert new_user.id == 1
@@ -24,43 +27,51 @@ def test_db_users_create(session):
     # assert f'updated_at={user.updated_at.strftime("%d-%m-%Y %H:%M:%S")!r},' in repr(user)
 
 
-def test_db_users_read_all(session, user):
-    bd_user = UserRepository.get_all(session=session, skip=0, limit=100)
+@pytest.mark.asyncio()
+async def test_db_users_read_all(session, user):
+    bd_user = await UserRepository.get_all(session=session, skip=0, limit=100)
     assert bd_user[0].id == user.id
 
 
-def test_db_users_read_one_by_id(session, user):
-    bd_user = UserRepository.get_by_id(session=session, user_id=user.id)
+@pytest.mark.asyncio()
+async def test_db_users_read_one_by_id(session, user):
+    bd_user = await UserRepository.get_by_id(session=session, user_id=user.id)
     assert bd_user.id == user.id
 
 
-def test_db_users_read_one_by_username(session, user):
-    bd_user = UserRepository.get_by_username(session=session, username=user.username)
+@pytest.mark.asyncio()
+async def test_db_users_read_one_by_username(session, user):
+    bd_user = await UserRepository.get_by_username(session=session, username=user.username)
     assert bd_user.id == user.id
 
 
-def test_db_users_read_one_by_email(session, user):
-    bd_user = UserRepository.get_by_email(session=session, email=user.email)
+@pytest.mark.asyncio()
+async def test_db_users_read_one_by_email(session, user):
+    bd_user = await UserRepository.get_by_email(session=session, email=user.email)
     assert bd_user.id == user.id
 
 
-def test_db_users_read_one_by_username_or_email(session, user):
-    bd_user = UserRepository.get_by_username_or_email(session=session, username=user.username, email=user.email)
+@pytest.mark.asyncio()
+async def test_db_users_read_one_by_username_or_email(session, user):
+    bd_user = await UserRepository.get_by_username_or_email(session=session, username=user.username, email=user.email)
     assert bd_user.id == user.id
 
 
-def test_db_users_exists_by_id(session, user):
-    result = UserRepository.exists_by_id(session=session, user_id=user.id)
+@pytest.mark.asyncio()
+async def test_db_users_exists_by_id(session, user):
+    result = await UserRepository.exists_by_id(session=session, user_id=user.id)
     assert result is True
 
 
-def test_db_users_update(session, user):
+@pytest.mark.asyncio()
+async def test_db_users_update(session, user):
     user.username = 'chrismarsil2'
-    bd_user = UserRepository.update(session=session, user=user)
+    bd_user = await UserRepository.update(session=session, user=user)
     assert bd_user.username == 'chrismarsil2'
 
 
-def test_db_users_delete(session, user):
-    UserRepository.delete(session=session, user=user)
-    result = UserRepository.exists_by_id(session=session, user_id=user.id)
+@pytest.mark.asyncio()
+async def test_db_users_delete(session, user):
+    await UserRepository.delete(session=session, user=user)
+    result = await UserRepository.exists_by_id(session=session, user_id=user.id)
     assert result is False
