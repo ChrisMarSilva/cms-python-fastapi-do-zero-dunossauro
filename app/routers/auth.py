@@ -11,6 +11,7 @@ from app.repositories.user import UserRepository
 from app.schemas.token import TokenRequest
 from app.schemas.user import UserResponse
 from app.utils.security import create_access_token, get_current_user, verify_password
+from app.utils.tracing import instrument_async
 
 router = APIRouter()
 T_OAuth2FormDep = Annotated[OAuth2PasswordRequestForm, Depends()]
@@ -18,6 +19,7 @@ T_SessionDep = Annotated[AsyncSession, Depends(get_session)]
 T_CurrentUserDep = Annotated[User, Depends(get_current_user)]
 
 
+@instrument_async('calling login_for_access_token')
 @router.post(path='/token', response_model=TokenRequest, status_code=HTTPStatus.OK)
 async def login_for_access_token(request: T_OAuth2FormDep, session: T_SessionDep) -> TokenRequest:
     user = await UserRepository.get_by_email(session=session, email=request.username)
@@ -30,11 +32,13 @@ async def login_for_access_token(request: T_OAuth2FormDep, session: T_SessionDep
     return TokenRequest(access_token=access_token, token_type='bearer')  # {'access_token': access_token, 'token_type': 'bearer'}
 
 
+@instrument_async('calling test_token')
 @router.post(path='/test_token', response_model=UserResponse, status_code=HTTPStatus.OK)
 async def test_token(current_user: T_CurrentUserDep):
     return current_user
 
 
+@instrument_async('calling refresh_access_token')
 @router.post(path='/refresh_token', response_model=TokenRequest, status_code=HTTPStatus.OK)
 async def refresh_access_token(current_user: T_CurrentUserDep):
     access_token = create_access_token(data={'sub': current_user.email, 'id': current_user.id, 'username': current_user.username})
