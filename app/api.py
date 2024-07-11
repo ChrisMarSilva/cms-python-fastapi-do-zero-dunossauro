@@ -40,8 +40,7 @@ async def add_process_time_header(request: Request, call_next):
         end_time = time.perf_counter() - start_time
 
     process_time: str = f'{dt.timedelta(seconds=end_time)}({end_time:.2f}s)'
-    logger.info(f'Request to {request.url.path}: {process_time}')
-
+    # logger.info(f'Request to {request.url.path}: {process_time}')
     response.headers['X-Process-Time'] = process_time
     return response
 
