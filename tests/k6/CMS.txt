@@ -1,0 +1,8 @@
+
+k6 run .\tests\k6\http_default.js
+k6 run --duration 1m --vus 10 .\tests\k6\http_default.js
+k6 run --duration 1m --vus 100 .\tests\k6\http_default.js
+
+k6 run .\tests\k6\http_user_all.js
+k6 run --duration 30s --vus 10 .\tests\k6\http_user_all.js
+k6 run --duration 30s --vus 100 .\tests\k6\http_user_all.js
