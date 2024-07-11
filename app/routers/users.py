@@ -32,6 +32,9 @@ async def users_create(request: UserRequest, session: T_SessionDep, cache: T_Cac
 
     db_user = await UserRepository.get_by_username_or_email(session, request.username, request.email)
     if db_user:
+        cache.delete(f"users_all")
+        cache.delete(f"users_skip")
+        cache.delete(f"users_limit")
         cache.set(f"users_username_{db_user.username}", db_user.as_json())
         cache.set(f"users_email_{db_user.email}", db_user.as_json())
         if db_user.username == request.username:
@@ -39,16 +42,18 @@ async def users_create(request: UserRequest, session: T_SessionDep, cache: T_Cac
         elif db_user.email == request.email:
             raise HTTPException(status_code=HTTPStatus.CONFLICT, detail='Email already exists(db).')
 
+    db_user = User(username=request.username, password=get_password_hash(request.password), email=request.email)
+    db_user = await UserRepository.create(session=session, user=db_user)
     # try:
     # except errors.DuplicateKeyError:
     #     return JSONResponse(content={"detail": f"Username already exists"}, status_code=HTTPStatus.CONFLICT)
 
-    db_user = User(username=request.username, password=get_password_hash(request.password), email=request.email)
-    db_user = await UserRepository.create(session=session, user=db_user)
-
+    json_user = db_user.as_json()
+    cache.set(f"users_username_{db_user.username}", json_user)
+    cache.set(f"users_email_{db_user.email}", json_user)
     cache.delete(f"users_all")
-    cache.set(f"users_username_{db_user.username}", db_user.as_json())
-    cache.set(f"users_email_{db_user.email}", db_user.as_json())
+    cache.delete(f"users_skip")
+    cache.delete(f"users_limit")
 
     return db_user
 
@@ -58,7 +63,7 @@ async def users_create(request: UserRequest, session: T_SessionDep, cache: T_Cac
 async def users_read_all(session: T_SessionDep, cache: T_CacheDep, skip: int = 0, limit: int = 100):
     users_skip = cache.get("users_skip")
     users_limit = cache.get("users_limit")
-    if users_skip and users_limit:  # is not None
+    if users_skip and users_limit:
         if int(users_skip) != skip or int(users_limit) != limit:
             cache.delete(f"users_skip")
             cache.delete(f"users_limit")
@@ -73,26 +78,18 @@ async def users_read_all(session: T_SessionDep, cache: T_CacheDep, skip: int = 0
     users_db = await UserRepository.get_all(session=session, skip=skip, limit=limit)
     if users_db:
         users_json = [user.as_json() for user in users_db]
+        cache.set("users_all", json.dumps(users_json))
         cache.set("users_skip", skip)
         cache.set("users_limit", limit)
-        cache.set("users_all", json.dumps(users_json))
 
     return UsersResponse(users=users_db)
 
 
 @instrument_async('calling users_read_one')
 @router.get(path='/{user_id}', response_model=UserResponse, status_code=HTTPStatus.OK)
-async def users_read_one(user_id: int, cache: T_CacheDep, current_user: T_CurrentUserDep):
+async def users_read_one(user_id: int, current_user: T_CurrentUserDep):
     if current_user.id != user_id:
         raise HTTPException(status_code=HTTPStatus.FORBIDDEN, detail='The user do not have enough privileges')
-
-    user = cache.get(f"users_username_{current_user.username}")
-    if user:
-        return json.loads(user, object_hook=lambda x: User(**x))
-
-    user = cache.get(f"users_email_{current_user.email}")
-    if user:
-        return json.loads(user, object_hook=lambda x: User(**x))
 
     return current_user
 
@@ -110,11 +107,12 @@ async def users_update(user_id: int, request: UserRequest, session: T_SessionDep
 
     current_user = await UserRepository.update(session=session, user=current_user)
 
+    json_user = current_user.as_json()
+    cache.set(f"users_username_{current_user.username}", json_user)
+    cache.set(f"users_email_{current_user.email}", json_user)
     cache.delete(f"users_all")
     cache.delete(f"users_skip")
     cache.delete(f"users_limit")
-    cache.set(f"users_username_{current_user.username}", current_user.as_json())
-    cache.set(f"users_email_{current_user.email}", current_user.as_json())
 
     return current_user
 
@@ -125,10 +123,10 @@ async def delete_user(user_id: int, session: T_SessionDep, cache: T_CacheDep, cu
     if current_user.id != user_id:
         raise HTTPException(status_code=HTTPStatus.FORBIDDEN, detail='The user do not have enough privileges')
 
+    cache.delete(f"users_username_{current_user.username}")
+    cache.delete(f"users_email_{current_user.email}")
     cache.delete(f"users_all")
     cache.delete(f"users_skip")
     cache.delete(f"users_limit")
-    cache.delete(f"users_username_{current_user.username}")
-    cache.delete(f"users_email_{current_user.email}")
 
     await UserRepository.delete(session=session, user=current_user)

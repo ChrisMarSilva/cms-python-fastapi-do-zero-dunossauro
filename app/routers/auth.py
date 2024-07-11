@@ -1,10 +1,13 @@
+import json
 from http import HTTPStatus
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.ext.asyncio import AsyncSession
+import redis
 
+from app.db.cache import get_cache
 from app.db.database import get_session
 from app.models.user import User
 from app.repositories.user import UserRepository
@@ -17,14 +20,20 @@ router = APIRouter()
 T_OAuth2FormDep = Annotated[OAuth2PasswordRequestForm, Depends()]
 T_SessionDep = Annotated[AsyncSession, Depends(get_session)]
 T_CurrentUserDep = Annotated[User, Depends(get_current_user)]
+T_CacheDep = Annotated[redis.Redis, Depends(get_cache)]
 
 
 @instrument_async('calling login_for_access_token')
 @router.post(path='/token', response_model=TokenRequest, status_code=HTTPStatus.OK)
-async def login_for_access_token(request: T_OAuth2FormDep, session: T_SessionDep) -> TokenRequest:
-    user = await UserRepository.get_by_email(session=session, email=request.username)
-    if not user:
-        raise HTTPException(status_code=HTTPStatus.BAD_REQUEST, detail='Incorrect email or password')
+async def login_for_access_token(request: T_OAuth2FormDep, session: T_SessionDep, cache: T_CacheDep) -> TokenRequest:
+    cache_user = cache.get(f"users_email_{request.username}")
+    if cache_user:
+        user = User(**json.loads(cache_user))
+    else:
+        user = await UserRepository.get_by_email(session=session, email=request.username)
+        if not user:
+            raise HTTPException(status_code=HTTPStatus.BAD_REQUEST, detail='Incorrect email or password')
+
     if not verify_password(request.password, user.password):
         raise HTTPException(status_code=HTTPStatus.BAD_REQUEST, detail='Incorrect email or password')
 
