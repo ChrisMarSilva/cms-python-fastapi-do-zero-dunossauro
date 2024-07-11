@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CMS Python FastAPI do Zero</title>
+    <link href="{{ url_for('static', path='/styles.css') }}" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@1.0.1/css/bulma.min.css">
+</head>
+
+<body>
+    <br />
+
+    <div class="columns">
+        <div class="column is-half is-offset-one-quarter">
+
+            <div class="card">
+                <header class="card-header">
+                    <p class="card-header-title">Users {{ id }}</p>
+                </header>
+                <div class="card-content">
+                    <form hx-post="/users" hx-trigger="submit" hx-target="#replaceMe" hx-swap="innerHTML" hx-ext="json-enc">
+                        <label class="label">Username</label> <input class="input" type="text" name="username">
+                        <label class="label">E-mail</label>   <input class="input" type="text" name="email">
+                        <label class="label">Password</label> <input class="input" type="text" name="password">
+                        <input class="button" type="submit" value="Salvar">
+                    </form>
+                </div>
+            </div>
+
+            <br />
+
+<!--            innerHTML outerHTML -->
+            <div hx-trigger="load" hx-get="/users/?skip=0&limit=10" hx-target="#replaceMe" hx-swap="innerHTML">
+                <table class="table">
+                  <thead> <tr> <th>ID</th> <th>Username</th> <th>E-mail</th> </tr> </thead>
+                  <tfoot> <tr> <th>ID</th> <th>Username</th> <th>E-mail</th> </tr> </tfoot>
+                  <tbody id="replaceMe">
+                    <tr> <th>1</th> <td>user1</td> <td>user1@exemplo.com</td> </tr>
+                    <tr> <th>2</th> <td>user2</td> <td>user2@exemplo.com</td> </tr>
+                  </tbody>
+                </table>
+            </div>
+
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/htmx.org@2.0.0"></script>
+    <script src="https://unpkg.com/htmx.org@1.9.12/dist/ext/json-enc.js"></script>
+</body>
+
+</html>

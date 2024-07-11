@@ -58,6 +58,20 @@ async def get_current_user(session: T_SessionDep, cache: T_CacheDep, token: T_To
     if not email:  # pragma: no cover
         raise HTTPException(status_code=HTTPStatus.UNAUTHORIZED, detail='Could not validate credentials', headers={'WWW-Authenticate': 'Bearer'})
 
+    # try:
+    # except ValueError as exc:
+    # span.set_status(trace.Status(trace.StatusCode.ERROR, str(exc)))
+    # except ValueError as exc:
+    # span.record_exception(exc)
+    # span.set_status(trace.Status(trace.StatusCode.ERROR, str(exc)))
+    # except Exception as ex:
+    # span.record_exception(ex)
+    # span.set_status(Status(StatusCode.ERROR))
+    #
+    # if span.is_recording():
+    # span.set_attribute("enduser.id", kwargs["id"])
+    # span.set_attribute("enduser.email", kwargs["email"])
+
     with tracer.start_as_current_span('get by cache') as span:
         span.add_event("get email")
         cache_user = cache.get(f"users_email_{email}")
