@@ -1,22 +1,28 @@
-from datetime import datetime, date, time
+import asyncio
 import json
+from datetime import datetime
 
 import redis
-from sqlalchemy import create_engine, select, func
-from sqlalchemy.orm import Session, Mapped, mapped_column, registry
 
+# import aioredis
+from sqlalchemy import create_engine, func, select
+from sqlalchemy.orm import Mapped, Session, mapped_column, registry
 
 table_registry = registry()
+TWO_MINUTES = 60 + 60
 
 
-def get_session():
-    engine = create_engine("sqlite:///database.db", echo=False, connect_args={'check_same_thread': False})
+async def get_session():
+    engine = create_engine('sqlite:///database.db', echo=False, connect_args={'check_same_thread': False})
     return Session(engine)
 
 
-def get_cache():
-    session = redis.ConnectionPool(host='localhost', port=6379, password='123', db=0, encoding="utf-8", decode_responses=True)
+async def get_cache():
+    session = redis.ConnectionPool(host='localhost', port=6379, password='123', db=0, max_connections=100, encoding='utf-8', decode_responses=True)
     return redis.Redis(connection_pool=session)
+    # return aioredis.from_url(url="redis://localhost:6379", password='123', db=0, encoding="utf-8", decode_responses=True)
+    # session = aioredis.ConnectionPool(host='localhost', port=6379, password='123', db=0, max_connections=100, encoding="utf-8", decode_responses=True)
+    # return aioredis.Redis(connection_pool=session)
 
 
 @table_registry.mapped_as_dataclass
@@ -47,55 +53,59 @@ class User:
         return json.dumps(self.as_dict(), default=str)
 
 
-def main():
+async def main():
     try:
-        session = get_session()
+        session = await get_session()
         stmt = select(User).where(User.id == 1)
         result = session.execute(stmt)
         db_user = result.scalar()
-        print(f"session.user: {db_user}")
+        print(f'session.user: {db_user}')
     except Exception as ex:
-        print(f"session.user.error: {ex}")
+        print(f'session.user.error: {ex}')
 
-    cache = get_cache()
+    cache = await get_cache()
     try:
-        cache_chave =f"users_email_{db_user.email}"
+        cache_chave = f'users_email_{db_user.email}'
 
         try:
-            print(f"cache.set: {db_user.as_json()}")
-            cache.set(cache_chave, db_user.as_json())
+            print(f'cache.set: {db_user.as_json()}')
+            cache.set(
+                cache_chave,
+                db_user.as_json(),
+                ex=TWO_MINUTES,
+            )
         except Exception as ex:
-            print(f"cache.set.error: {ex}")
+            print(f'cache.set.error: {ex}')
 
         try:
             cache_user = cache.get(cache_chave)
-            print(f"cache.get: {type(cache_user)} --> {cache_user}")
+            print(f'cache.get: {type(cache_user)} --> {cache_user}')
         except Exception as ex:
-            print(f"cache.get.error: {ex}")
+            print(f'cache.get.error: {ex}')
 
         try:
             loads_user = json.loads(cache_user)
             # loads_user = json.loads(cache_user, object_hook=lambda x: User(**x))
-            print(f"json.loads: {type(loads_user)} --> {loads_user}")
+            print(f'json.loads: {type(loads_user)} --> {loads_user}')
         except Exception as ex:
-            print(f"json.loads.error: {ex}")
+            print(f'json.loads.error: {ex}')
         try:
             new_user = User(**loads_user)
-            print(f"new.user: {type(new_user)} --> {new_user}")
+            print(f'new.user: {type(new_user)} --> {new_user}')
         except Exception as ex:
-            print(f"new.user.error: {ex}")
+            print(f'new.user.error: {ex}')
 
         try:
-            print(f"db_user.id: {db_user.id}")
+            print(f'db_user.id: {db_user.id}')
             print(f"loads_user.id: {loads_user['id']}")
-            print(f"new_user.id: {new_user.id}")
+            print(f'new_user.id: {new_user.id}')
         except Exception as ex:
-            print(f"user.id.error: {ex}")
+            print(f'user.id.error: {ex}')
 
     finally:
         cache.close()
 
 
-if __name__ == "__main__":
-    # asyncio.run(main())
-    main()
+if __name__ == '__main__':
+    asyncio.run(main())
+    # main()
