@@ -1,4 +1,6 @@
 import pytest
+
+# import redis
 from httpx import AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.pool import StaticPool
@@ -35,14 +37,26 @@ async def session() -> AsyncSession:
         async with AsyncSession(engine) as session:
             yield session
 
-        # async_session = sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
-        # async with async_session() as session:
-        #     yield session
-
         async with engine.begin() as conn:
             await conn.run_sync(table_registry.metadata.drop_all)
     finally:
         await engine.dispose()
+
+
+# @pytest.fixture(autouse=True)
+# async def cache() -> redis.asyncio.Redis:
+#     session = redis.ConnectionPool(
+#         host='localhost',
+#         port=6379,
+#         password='123',
+#         db=0,
+#         max_connections=100,
+#         encoding='utf-8',
+#         decode_responses=True,
+#     )
+#     cache = redis.Redis(connection_pool=session)
+#     yield cache
+#     cache.close()
 
 
 @pytest.fixture()
