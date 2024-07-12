@@ -8,7 +8,7 @@ from alembic import context
 from app.models import table_registry
 from app.utils.settings import Settings
 
-# this is the Alembic Config object, which provides
+# this is the Alembic config object, which provides
 # access to the values within the .ini file in use.
 config = context.config
 config.set_main_option('sqlalchemy.url', Settings().DATABASE_URL)

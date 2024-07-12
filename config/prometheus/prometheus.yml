@@ -1,0 +1,36 @@
+global:
+  scrape_interval: 5s
+  scrape_timeout: 5s
+  evaluation_interval: 5s
+  external_labels:
+    monitor: 'my-project'
+
+alerting:
+
+rule_files:
+
+scrape_configs:
+#  - job_name: 'prometheus'
+#    scrape_interval: 5s
+#    scrape_timeout: 5s
+#    metrics_path: /
+#    static_configs:
+#      - targets: ['localhost:9090']
+  - job_name: 'api'
+    honor_timestamps: true
+    scrape_interval: 5s
+    scrape_timeout: 5s
+    metrics_path: /metrics
+    scheme: http
+    follow_redirects: true
+    enable_http2: true
+    static_configs:
+      - targets: ['localhost:8000']
+      # http://localhost
+      # localhost
+      # 0.0.0.0
+      # 127.0.0.1
+      # 172.20.208.1
+      # 192.168.1.104
+      # host.docker.internal
+      # http://host.docker.internal
