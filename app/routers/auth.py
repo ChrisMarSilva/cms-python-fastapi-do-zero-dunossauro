@@ -1,13 +1,13 @@
-import json
+# import json
 from http import HTTPStatus
 from typing import Annotated
 
+# import redis
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.ext.asyncio import AsyncSession
-import redis
 
-from app.db.cache import get_cache
+# from app.db.cache import get_cache
 from app.db.database import get_session
 from app.models.user import User
 from app.repositories.user import UserRepository
@@ -20,30 +20,31 @@ router = APIRouter()
 T_OAuth2FormDep = Annotated[OAuth2PasswordRequestForm, Depends()]
 T_SessionDep = Annotated[AsyncSession, Depends(get_session)]
 T_CurrentUserDep = Annotated[User, Depends(get_current_user)]
-T_CacheDep = Annotated[redis.Redis, Depends(get_cache)]
+# T_CacheDep = Annotated[redis.Redis, Depends(get_cache)]
 
 
 @instrument_async('calling login_for_access_token')
 @router.post(path='/token', response_model=TokenRequest, status_code=HTTPStatus.OK)
-async def login_for_access_token(request: T_OAuth2FormDep, session: T_SessionDep, cache: T_CacheDep) -> TokenRequest:
-    cache_user = cache.get(f"users_email_{request.username}")
-    if cache_user:
-        user = User(**json.loads(cache_user))
-    else:
-        user = await UserRepository.get_by_email(session=session, email=request.username)
-        if not user:
-            raise HTTPException(status_code=HTTPStatus.BAD_REQUEST, detail='Incorrect email or password')
+async def login_for_access_token(request: T_OAuth2FormDep, session: T_SessionDep) -> TokenRequest:
+    user = await UserRepository.get_by_email(session=session, email=request.username)
+    # cache_user = cache.get(f'users_email_{request.username}')
+    # if cache_user:
+    #     user = User(**json.loads(cache_user))
+    # else:
+
+    if not user:
+        raise HTTPException(status_code=HTTPStatus.BAD_REQUEST, detail='Incorrect email or password')
 
     if not verify_password(request.password, user.password):
         raise HTTPException(status_code=HTTPStatus.BAD_REQUEST, detail='Incorrect email or password')
 
     access_token = create_access_token(data={'sub': user.email, 'id': user.id, 'username': user.username})
-    return TokenRequest(access_token=access_token, token_type='bearer')  # {'access_token': access_token, 'token_type': 'bearer'}
+    return TokenRequest(access_token=access_token, token_type='bearer')
 
 
 @instrument_async('calling test_token')
 @router.post(path='/test_token', response_model=UserResponse, status_code=HTTPStatus.OK)
-async def test_token(current_user: T_CurrentUserDep):
+async def test_token(current_user: T_CurrentUserDep):  # pragma: no cover
     return current_user
 
 
@@ -51,7 +52,7 @@ async def test_token(current_user: T_CurrentUserDep):
 @router.post(path='/refresh_token', response_model=TokenRequest, status_code=HTTPStatus.OK)
 async def refresh_access_token(current_user: T_CurrentUserDep):
     access_token = create_access_token(data={'sub': current_user.email, 'id': current_user.id, 'username': current_user.username})
-    return TokenRequest(access_token=access_token, token_type='bearer')  # return {'access_token': new_access_token, 'token_type': 'bearer'}
+    return TokenRequest(access_token=access_token, token_type='bearer')
 
 
 # @router.post("/password-recovery/{email}")

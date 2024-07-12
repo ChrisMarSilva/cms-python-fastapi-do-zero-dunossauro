@@ -19,7 +19,7 @@ async def test_users_create_return_error_bad_request_username(client, user):
     await client.post('/users/', json=json)
     response = await client.post('/users/', json=json)
     assert response.status_code == HTTPStatus.CONFLICT
-    assert response.json() == {'detail': 'Username already exists'}
+    assert response.json() == {'detail': 'Username already exists.'}
 
 
 @pytest.mark.asyncio()
@@ -28,7 +28,7 @@ async def test_users_create_return_error_bad_request_email(client, user):
     await client.post('/users/', json=json)
     response = await client.post('/users/', json=json)
     assert response.status_code == HTTPStatus.CONFLICT
-    assert response.json() == {'detail': 'Email already exists'}
+    assert response.json() == {'detail': 'Email already exists.'}
 
 
 @pytest.mark.asyncio()

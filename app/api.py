@@ -1,56 +1,63 @@
-import json
 import datetime as dt
-import logging
 import time
-from http import HTTPStatus
 from contextlib import asynccontextmanager
+from http import HTTPStatus
 
-# import redis
-from fastapi import FastAPI, Request
-from fastapi.templating import Jinja2Templates
-from fastapi.staticfiles import StaticFiles
-from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
-from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
-from opentelemetry.instrumentation.logging import LoggingInstrumentor
 
+# from fastapi.responses import HTMLResponse  # , JSONResponse
+# from fastapi.staticfiles import StaticFiles
+# from fastapi.templating import Jinja2Templates
+from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
+
+# from opentelemetry.instrumentation.system_metrics import SystemMetricsInstrumentor
 from app.routers import auth, users
 from app.schemas.message import MessageResponse
 from app.utils.tracing import instrument_async
-# from app.utils.settings import Settings
 
-# settings = Settings()
+# from app.utils.metrics import configuration  # PrometheusMiddleware, metrics, setting_otlp
+# from app.utils.logging import logger
 
 
 @asynccontextmanager
-async def lifespan(app: FastAPI):
-    logger.info('event_startup')
-    # session = redis.ConnectionPool(host=settings.REDIS_HOST, port=settings.REDIS_PORT, password=settings.REDIS_PASSWORD, db=settings.REDIS_DB, encoding="utf-8", decode_responses=True)
-    # app.state.redis = redis.Redis(connection_pool=session)
+async def lifespan(app: FastAPI):  # pragma: no cover
+    # logger.info('event_startup')
     yield
-    # app.state.redis.close()
-    logger.info('event_shutdown')
+    # logger.info('event_shutdown')
 
 
 app = FastAPI(title='FastAPI do Zero - Dunossauro', version='1.0', lifespan=lifespan)
+
+# Add routers
 app.include_router(auth.router, prefix='/auth', tags=['Auth'])
 app.include_router(users.router, prefix='/users', tags=['Users'])
+# app.add_route('/metrics', metrics)
 
-FastAPIInstrumentor.instrument_app(app=app)
-
+# Add CORS
 app.add_middleware(GZipMiddleware, minimum_size=1000000)
-app.add_middleware(
-    CORSMiddleware, allow_origins=['http://localhost', 'http://localhost:8080'], allow_credentials=True, allow_methods=['*'], allow_headers=['*']
-)
+app.add_middleware(CORSMiddleware, allow_origins=['*'], allow_credentials=True, allow_methods=['*'], allow_headers=['*'])
 
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
-# logging.getLogger('sqlalchemy.engine').setLevel(logging.DEBUG)
-LoggingInstrumentor().instrument(log_level=logging.INFO, set_logging_format=True, logging_format='%(asctime)s %(levelname)s [%(name)s] [%(filename)s:%(lineno)d] [trace_id=%(otelTraceID)s span_id=%(otelSpanID)s resource.service.name=%(otelServiceName)s trace_sampled=%(otelTraceSampled)s] - %(message)s')
+# Add opentelemetry
+FastAPIInstrumentor.instrument_app(app=app)  # , tracer_provider=tracer
+# SystemMetricsInstrumentor(config=configuration).instrument()  # SystemMetricsInstrumentor().instrument()
+# app.add_middleware(PrometheusMiddleware, app_name='fast.api.dunossauro')
+# setting_otlp(app, 'fast.api.dunossauro', 'http://tempo:4317')
 
-app.mount("/static", StaticFiles(directory="app/static"), name="static")
-templates = Jinja2Templates(directory="app/templates")
+
+# Add templates and statics
+# app.mount('/static', StaticFiles(directory='app/static', html=True), name='static')
+# templates = Jinja2Templates(directory='app/templates')
+
+# class EndpointFilter(logging.Filter):
+#     def filter(self, record: logging.LogRecord) -> bool:
+#         return record.getMessage().find("GET /metrics") == -1
+
+
+# @app.exception_handler(Exception)
+# def validation_exception_handler(request, err):
+#     return JSONResponse(status_code=HTTPStatus.BAD_REQUEST, content={'message': f'Failed to execute: {request.method}: {request.url}. Detail: {err}'})
 
 
 @app.middleware('http')
@@ -67,30 +74,18 @@ async def add_process_time_header(request: Request, call_next):
     return response
 
 
-@app.exception_handler(Exception)
-def validation_exception_handler(request, err):
-    return JSONResponse(status_code=400, content={"message": f"Failed to execute: {request.method}: {request.url}. Detail: {err}"})
-
-
-@app.get(path='/', status_code=HTTPStatus.OK, response_class=HTMLResponse)
-async def home(request: Request):
-    return templates.TemplateResponse(name="index.html", context={"request": request, "id": 1000})
+# @app.get(path='/', status_code=HTTPStatus.OK, response_class=HTMLResponse)
+# async def home(request: Request):
+#     return templates.TemplateResponse(name='index.html', context={'request': request, 'id': 1000})
 
 
 @instrument_async('calling get_name_sync')
 @app.get(path='/root', status_code=HTTPStatus.OK, response_model=MessageResponse)
 async def root():
-    logger.info('Get Message')
+    # logger.info('Get Message')
     try:
-
-        value = app.state.get('users-json')
-        if value is None:
-            # response = await app.state.http_client.get('https://jsonplaceholder.typicode.com/users')
-            # value = response.json()
-            # app.state.set('users-json', json.dumps(value))
-            app.state.set('users-json', "ok")
-
         # await asyncio.sleep(5)
         return MessageResponse(message='Olá Mundo!')
-    except Exception as exc:
-        logger.error(f'Error: {exc}')
+    except Exception:  # pragma: no cover
+        # logger.error(f'Error: {exc}')
+        raise HTTPException(status_code=HTTPStatus.BAD_REQUEST, detail='Invalid request body')  # pragma: no cover
