@@ -7,15 +7,16 @@ from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
 
-# from fastapi.responses import HTMLResponse  # , JSONResponse
-# from fastapi.staticfiles import StaticFiles
-# from fastapi.templating import Jinja2Templates
+# from fastapi.responses import JSONResponse, HTMLResponse
 from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
 
+# from fastapi.staticfiles import StaticFiles
+# from fastapi.templating import Jinja2Templates
 # from opentelemetry.instrumentation.system_metrics import SystemMetricsInstrumentor
 from app.routers import auth, users
 from app.schemas.message import MessageResponse
-from app.utils.tracing import instrument_async
+
+# from app.utils.tracing import instrument_async
 
 # from app.utils.metrics import configuration  # PrometheusMiddleware, metrics, setting_otlp
 # from app.utils.logging import logger
@@ -79,7 +80,7 @@ async def add_process_time_header(request: Request, call_next):
 #     return templates.TemplateResponse(name='index.html', context={'request': request, 'id': 1000})
 
 
-@instrument_async('calling get_name_sync')
+# @instrument_async('calling get_name_sync')
 @app.get(path='/root', status_code=HTTPStatus.OK, response_model=MessageResponse)
 async def root():
     # logger.info('Get Message')

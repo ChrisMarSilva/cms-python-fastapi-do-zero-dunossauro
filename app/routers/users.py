@@ -14,7 +14,8 @@ from app.models.user import User
 from app.repositories.user import UserRepository
 from app.schemas.user import UserRequest, UserResponse, UsersResponse
 from app.utils.security import get_current_user, get_password_hash
-from app.utils.tracing import instrument_async
+
+# from app.utils.tracing import instrument_async
 
 router = APIRouter()
 T_CurrentUserDep = Annotated[User, Depends(get_current_user)]
@@ -22,7 +23,7 @@ T_SessionDep = Annotated[AsyncSession, Depends(get_session)]
 # T_CacheDep = Annotated[redis.Redis, Depends(get_cache)]
 
 
-@instrument_async('calling users_read_all')
+# @instrument_async('calling users_read_all')
 @router.get(path='/', response_model=UsersResponse, status_code=HTTPStatus.OK)
 async def users_read_all(session: T_SessionDep, skip: int = 0, limit: int = 100):  # , cache: T_CacheDep
     # users_skip = cache.get('users_skip')
@@ -50,7 +51,7 @@ async def users_read_all(session: T_SessionDep, skip: int = 0, limit: int = 100)
     return UsersResponse(users=users_db)
 
 
-@instrument_async('calling users_read_one')
+# @instrument_async('calling users_read_one')
 @router.get(path='/{user_id}', response_model=UserResponse, status_code=HTTPStatus.OK)
 async def users_read_one(user_id: int, current_user: T_CurrentUserDep):
     if current_user.id != user_id:
@@ -59,7 +60,7 @@ async def users_read_one(user_id: int, current_user: T_CurrentUserDep):
     return current_user
 
 
-@instrument_async('calling users_create')
+# @instrument_async('calling users_create')
 @router.post(path='/', response_model=UserResponse, status_code=status.HTTP_201_CREATED)
 async def users_create(request: UserRequest, session: T_SessionDep):  # , cache: T_CacheDep
     # if cache.exists(f'users_username_{request.username}'):
@@ -97,9 +98,9 @@ async def users_create(request: UserRequest, session: T_SessionDep):  # , cache:
     return db_user
 
 
-@instrument_async('calling users_update')
+# @instrument_async('calling users_update')
 @router.put(path='/{user_id}', response_model=UserResponse, status_code=HTTPStatus.OK)
-async def users_update(user_id: int, request: UserRequest, session: T_SessionDep, current_user: T_CurrentUserDep) -> User:
+async def users_update(user_id: int, request: UserRequest, session: T_SessionDep, current_user: T_CurrentUserDep):
     if current_user.id != user_id:
         raise HTTPException(status_code=HTTPStatus.FORBIDDEN, detail='The user do not have enough privileges')
 
@@ -120,7 +121,7 @@ async def users_update(user_id: int, request: UserRequest, session: T_SessionDep
     return current_user
 
 
-@instrument_async('calling delete_user')
+# @instrument_async('calling delete_user')
 @router.delete(path='/{user_id}', status_code=HTTPStatus.NO_CONTENT)
 async def delete_user(user_id: int, session: T_SessionDep, current_user: T_CurrentUserDep):
     if current_user.id != user_id:

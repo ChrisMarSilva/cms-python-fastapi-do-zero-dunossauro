@@ -1,6 +1,5 @@
+import factory
 import pytest
-
-# import redis
 from httpx import AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.pool import StaticPool
@@ -11,6 +10,21 @@ from app.models import table_registry
 from app.models.user import User
 from app.repositories.user import UserRepository
 from app.utils.security import get_password_hash
+
+# @pytest.fixture(autouse=True)
+# async def cache() -> redis.asyncio.Redis:
+#     session = redis.ConnectionPool(
+#         host='localhost',
+#         port=6379,
+#         password='123',
+#         db=0,
+#         max_connections=100,
+#         encoding='utf-8',
+#         decode_responses=True,
+#     )
+#     cache = redis.Redis(connection_pool=session)
+#     yield cache
+#     cache.close()
 
 
 @pytest.fixture()
@@ -43,36 +57,21 @@ async def session() -> AsyncSession:
         await engine.dispose()
 
 
-# @pytest.fixture(autouse=True)
-# async def cache() -> redis.asyncio.Redis:
-#     session = redis.ConnectionPool(
-#         host='localhost',
-#         port=6379,
-#         password='123',
-#         db=0,
-#         max_connections=100,
-#         encoding='utf-8',
-#         decode_responses=True,
-#     )
-#     cache = redis.Redis(connection_pool=session)
-#     yield cache
-#     cache.close()
-
-
 @pytest.fixture()
 async def user(session: AsyncSession) -> User:
-    user = User(username='Teste', email='teste@test.com', password=get_password_hash('testtest'))
-    user = await UserRepository.create(session=session, user=user)
-    user.clean_password = 'testtest'  # hack monkey-patch
-    return user
+    # user_db = User(username='Teste', email='teste@test.com', password=get_password_hash('testtest'))
+    user_db = UserFactory(password=get_password_hash('testtest'))
+    user_db = await UserRepository.create(session=session, user=user_db)
+    user_db.clean_password = 'testtest'  # hack monkey-patch
+    return user_db
 
 
 @pytest.fixture()
 async def other_user(session: AsyncSession) -> User:
-    user = User(username='Teste2', email='teste2@test.com', password=get_password_hash('testtest2'))
-    user = await UserRepository.create(session=session, user=user)
-    user.clean_password = 'testtest2'  # hack monkey-patch
-    return user
+    user_db = UserFactory(password=get_password_hash('testtest2'))
+    user_db = await UserRepository.create(session=session, user=user_db)
+    user_db.clean_password = 'testtest2'  # hack monkey-patch
+    return user_db
 
 
 @pytest.fixture()
@@ -85,3 +84,15 @@ async def token(client: AsyncClient, user: User) -> str:
 async def other_token(client: AsyncClient, other_user: User) -> str:
     response = await client.post('/auth/token', data={'username': other_user.email, 'password': other_user.clean_password})
     return response.json()['access_token']
+
+
+class UserFactory(factory.Factory):
+    class Meta:
+        model = User
+
+    # id = None
+    username = factory.Sequence(lambda n: f'test{n}')
+    email = factory.LazyAttribute(lambda obj: f'{obj.username}@test.com')
+    password = factory.LazyAttribute(lambda obj: f'{obj.username}@example.com')
+    # created_at = None
+    # updated_at = None
